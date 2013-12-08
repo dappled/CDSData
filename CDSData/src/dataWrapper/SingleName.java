@@ -1,43 +1,57 @@
 package dataWrapper;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 
-import Utils.CollectionUtils;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+
+import Utils.PoiRecord;
 
 /**
  * @author Zhenghong Dong
  */
-public class SingleName {
-	private final String						_name;
-	private LinkedHashMap<String, List<Double>>	_price;
-	private int									_count;
-	private String								_lastDay;
-	private static final int					smoothWindowSize	= 7;
+public class SingleName implements PoiRecord {
+	private String									_ticker;
+//	private LinkedHashMap<String, List<CDSFields>>	_price;
 
-	public SingleName(String name) {
-		_name = name;
-		_price = new LinkedHashMap<>();
-		_count = 0;
+	// private int _count;
+	// private String _lastDay;
+
+	// private static final int smoothWindowSize = 7;
+
+	public SingleName(String ticker) {
+		_ticker = ticker;
+	//	_price = new LinkedHashMap<>();
+		// _count = 0;
 	}
 
-	public void addRecord(final String date, final List<Double> price) throws Exception {
-		if (++_count == 0) {
-			_price.put( date, price );
-			_lastDay = date;
-		} else if (_count < smoothWindowSize) {
-			_price.put( _lastDay, CollectionUtils.addDoubleList( _price.get( _lastDay ), price ) );
-		} else {
-			_price.put( _lastDay, CollectionUtils.divideDoubleList( _price.get( _lastDay ), smoothWindowSize ) );
-			_count = 0;
-		}
+	public void addRecord(final String date, final List<CDSFields> price) throws Exception {
+//		_price.put( date, price );
 	}
 
-	public String getName() {
-		return _name;
+	public static int size() {
+		return 1;
 	}
 
-	public LinkedHashMap<String, List<Double>> getPrice() {
+	@Override
+	public void writeNextForMultipleRecords(final Workbook wb, final Row row, final int index) {
+		int i = index;
+		final CreationHelper createHelper = wb.getCreationHelper();
+		row.createCell( i++ ).setCellValue( createHelper.createRichTextString( _ticker ) );
+	}
+
+	@Override
+	public int writeNextForSingleRecord(final Workbook wb, final Sheet sheet, final int rowNum) {
+		return 0;
+	}
+
+	public String getTicker() {
+		return _ticker;
+	}
+
+/*	public LinkedHashMap<String, List<CDSFields>> getPrice() {
 		return _price;
-	}
+	}*/
 }

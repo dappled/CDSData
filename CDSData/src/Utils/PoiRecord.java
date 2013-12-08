@@ -29,5 +29,5 @@ public interface PoiRecord {
 	 * Returning how many fields are there in this record (so it will occupy this many of columns)
 	 * @return
 	 */
-	public int size();
+	//public int size();
 }

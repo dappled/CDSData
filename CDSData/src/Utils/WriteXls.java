@@ -31,9 +31,11 @@ public class WriteXls {
 	 * @param list list of list to write
 	 * @throws Exception
 	 */
-	public static void appendMultipleRecords(final String fileName, final String workbook, final List<List<? extends PoiRecord>> list,
+	public static void appendMultipleRecords(final String fileName, final String workbook,
+			final List<List<? extends PoiRecord>> list,
 			final List<Integer> sizeList)
 			throws Exception {
+		FileOutputStream fileOut = null;
 		try {
 			Workbook wb;
 			Sheet sheet;
@@ -62,19 +64,22 @@ public class WriteXls {
 			}
 
 			// format stuff
-			for (int i = 0; i < 15; i++) {
+			for (int i = 0; i < sheet.getRow( 0 ).getLastCellNum(); i++) {
 				sheet.autoSizeColumn( i );
 			}
 
 			// Write the output to a file
-			final FileOutputStream fileOut = new FileOutputStream( fileName );
+			fileOut = new FileOutputStream( fileName );
 			wb.write( fileOut );
-			fileOut.close();
 
 		} catch (final FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (final IOException e) {
 			e.printStackTrace();
+		} finally {
+			try {
+				fileOut.close();
+			} catch (NullPointerException e) {}
 		}
 	}
 
@@ -105,8 +110,10 @@ public class WriteXls {
 	 * @param list list to write
 	 * @throws Exception
 	 */
-	public static void appendSingleRecord(final String fileName, final String workbook, final List<? extends PoiRecord> list)
+	public static void appendSingleRecord(final String fileName, final String workbook,
+			final List<? extends PoiRecord> list)
 			throws Exception {
+		FileOutputStream fileOut = null;
 		try {
 			Workbook wb;
 			Sheet sheet;
@@ -122,16 +129,16 @@ public class WriteXls {
 
 			int i = start;
 			for (int p = 0; p < list.size(); p++) {
-				i = list.get( p ).writeNextForSingleRecord( wb, sheet, i);
+				i = list.get( p ).writeNextForSingleRecord( wb, sheet, i );
 			}
 
 			// format stuff
-			for (int q = 0; q < 15; q++) {
+			for (int q = 0; q < sheet.getRow( 0 ).getLastCellNum(); q++) {
 				sheet.autoSizeColumn( q );
 			}
 
 			// Write the output to a file
-			final FileOutputStream fileOut = new FileOutputStream( fileName );
+			fileOut = new FileOutputStream( fileName );
 			wb.write( fileOut );
 			fileOut.close();
 
@@ -139,6 +146,10 @@ public class WriteXls {
 			e.printStackTrace();
 		} catch (final IOException e) {
 			e.printStackTrace();
+		} finally {
+			try {
+				fileOut.close();
+			} catch (NullPointerException e) {}
 		}
 	}
 
