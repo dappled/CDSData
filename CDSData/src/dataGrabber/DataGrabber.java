@@ -1,7 +1,6 @@
 package dataGrabber;
 
 import indexMaker.CDSIndexProcessor;
-import indexMaker.CDSSingleNameProcessor;
 import indexMaker.CDSSingleNameReader;
 import indexMaker.FridayClock;
 import indexMaker.FridayManager;
@@ -110,16 +109,17 @@ public class DataGrabber {
 	private final String				_induLocal			= "C:\\Users\\Zhenghong Dong\\SkyDrive\\dappled's sky\\poly-mfe\\cds competition\\data\\INDU<version>.pdf";
 
 	private final String[][]			_urls				= { _igURL, _finURL, _induURL, _enrgURL, _consURL, _tmtURL };
-	private final String[]				_localFilesSample	= { _igLocal, _finLocal, _induLocal, _enrgLocal,
-															_consLocal,
+	private final String[]				_localFilesSample	= { _igLocal, _finLocal, _induLocal, _enrgLocal, _consLocal,
 															_tmtLocal };
-	private static final String[]		_indexlist			= { "IG", "FIN", "INDU", "ENRG", "CONS", "TMT" };
+	private static final String[]		_indexList			= { "IG", "FIN", "INDU", "ENRG", "CONS", "TMT" };
+	private static final String[]		_indexListOld		= { "IG", "Financials", "Industrials", "Energy", "Consumer", "TMT" };
 	// private static final String _highVol = "HVOL";
 	private final String				_suffix				= " USD CDS SR 5Y CORP";
 
 	private List<String>				_localFiles;
 	private HashMap<String, Index>		_indices;
 	private HashMap<String, SingleName>	_singleNames;
+	private HashMap<String, I_DBReader> _allSingleName;
 	private List<String>				_inactive;
 	private final int					_start, _end;
 
@@ -128,6 +128,8 @@ public class DataGrabber {
 	private final String				_singleNameOrgFiles	= "C:\\Users\\Zhenghong Dong\\SkyDrive\\dappled's sky\\poly-mfe\\cds competition\\data\\CDS\\histprice\\csv\\<name>.csv";
 	private final String				_singleNameFolder	= "C:\\Users\\Zhenghong Dong\\SkyDrive\\dappled's sky\\poly-mfe\\cds competition\\data\\singleNames\\";
 	private final String				_inactiveNames		= _singleNameFolder + "inactive.csv";
+	
+	
 
 	public DataGrabber(int start, int end) {
 		_start = start;
@@ -153,7 +155,7 @@ public class DataGrabber {
 						_localFiles.add( _igLocal.replace( "<version>", String.valueOf( i ) ) );
 						break;
 					} catch (final Exception e) {
-						System.err.println( "Fail to get cdx data for " + _indexlist[ q ] + " version s" + i );
+						System.err.println( "Fail to get cdx data for " + _indexList[ q ] + " version s" + i );
 						e.printStackTrace();
 						System.exit( 1 );
 					}
@@ -191,7 +193,8 @@ public class DataGrabber {
 		String fileName = "";
 		String indexName = "";
 		Index index = null;
-		String[] subIndex = Arrays.copyOfRange( DataGrabber._indexlist, 1, _indexlist.length );
+		String[] subIndex = Arrays.copyOfRange( DataGrabber._indexList, 1, _indexList.length );
+		String[] subIndexOld = Arrays.copyOfRange( DataGrabber._indexListOld, 1, _indexListOld.length );
 		// get <company name, ticker> map
 		HashMap<String, String> map = getCompanyNameMap();
 
@@ -216,7 +219,9 @@ public class DataGrabber {
 					if (Character.isDigit( str.charAt( 0 ) )) {
 						int indexStr = StringUtils.firstOccuranceOfArray( str, subIndex );
 						if (indexStr == -1) {
-							continue;
+							if ((indexStr = StringUtils.firstOccuranceOfArray( str, subIndexOld )) == -1){
+								continue;
+							}
 						}
 						// get company full name
 						String name = str.substring( str.indexOf( " " ) + 1, indexStr - 1 ).toUpperCase() + _suffix;
@@ -265,11 +270,11 @@ public class DataGrabber {
 	public void filterSingleName(int startDate) throws IOException {
 		// read all single name price info into memory, this is stupid I know but easy to implement I DONT HAVE TIME!!!
 		// actually this might be fast...
-		HashMap<String, I_DBReader> allSingleName = new HashMap<>();
+		_allSingleName = new HashMap<>();
 		for (Iterator<String> iterator = _singleNames.keySet().iterator(); iterator.hasNext();) {
 			String name = iterator.next();
 			try {
-				allSingleName
+				_allSingleName
 						.put( name, new CDSSingleNameReader( name, _singleNameOrgFiles.replace( "<name>", name ) ) );
 			} catch (FileNotFoundException e) {
 				System.err.println( name + " in unique.cvs but not in single name csv folder" );
@@ -283,7 +288,7 @@ public class DataGrabber {
 			// use the single name itself's reader
 			final LinkedList<I_DBReader> readers = new LinkedList<>();
 			I_DBReader single;
-			if ((single = allSingleName.get( name )) == null) {
+			if ((single = _allSingleName.get( name )) == null) {
 				//System.err.println( name + " trying to use " + name + " but doesn't exist" );
 				continue;
 			} else {
@@ -297,7 +302,7 @@ public class DataGrabber {
 
 			// write merged data
 			final LinkedList<I_DBProcessor> processors = new LinkedList<>();
-			processors.add( new CDSSingleNameProcessor( name, outFile ) );
+			processors.add( new CDSIndexProcessor( name, outFile, null, null ) );
 
 			// Make a db clock
 
@@ -333,14 +338,14 @@ public class DataGrabber {
 	public void constructIndex() throws IOException {
 		// read all single name price info into memory, this is stupid I know but easy to implement I DONT HAVE TIME!!!
 		// actually this might be fast...
-		HashMap<String, I_DBReader> allSingleName = new HashMap<>();
+		_allSingleName = new HashMap<>();
 		for (Iterator<String> iterator = _singleNames.keySet().iterator(); iterator.hasNext();) {
 			String name = iterator.next();
 			if (!_inactive.contains( name )) try {
-				allSingleName
+				_allSingleName
 						.put( name, new CDSSingleNameReader( name, _singleNameFolder + name + ".csv" ) );
 			} catch (FileNotFoundException e) {
-				//System.err.println( name + " in unique.cvs but not in single name csv folder" );
+				// System.err.println( name + " in unique.cvs but not in single name csv folder" );
 			}
 		}
 		for (Iterator<String> iterator = _indices.keySet().iterator(); iterator.hasNext();) {
@@ -352,7 +357,7 @@ public class DataGrabber {
 			final LinkedList<I_DBReader> readers = new LinkedList<>();
 			I_DBReader single;
 			for (String tmp : i.getCompanySet()) {
-				if ((single = allSingleName.get( tmp )) == null) {
+				if ((single = _allSingleName.get( tmp )) == null) {
 					//System.err.println( index + " trying to use " + tmp + " but doesn't exist" );
 					i.addMissingCDS( tmp );
 				} else {
@@ -427,15 +432,15 @@ public class DataGrabber {
 	}
 
 	public static void main(final String[] args) throws Exception {
-		final int start = 15;
+		final int start = 10;
 		final int end = 21;
 
 		final DataGrabber grabber = new DataGrabber( start, end );
 
 		// get pdf from Markit
-		// grabber.getPDF();
+		//grabber.getPDF();
 
-		List<String> pdfsTest = new ArrayList<>();
+		/*List<String> pdfsTest = new ArrayList<>();
 		for (int i = start; i <= end; i++) {
 			pdfsTest.add( grabber._igLocal.replace( "<version>", String.valueOf( i ) ) );
 			pdfsTest.add( grabber._consLocal.replace( "<version>", String.valueOf( i ) ) );
@@ -446,7 +451,7 @@ public class DataGrabber {
 		}
 		grabber._localFiles = pdfsTest;
 		// pdf to txt
-		// grabber.PDFToTxt();
+		 grabber.PDFToTxt();*/
 
 		// get index components from txt file
 		List<String> localFilesTest = new ArrayList<>();

@@ -18,9 +18,8 @@ public class CDSIndexProcessor implements I_DBProcessor {
 	private boolean				_isFinished;
 	private final FileWriter	_out;
 	private final String		_indexName;
-	private final List<String>  _missingCompany;
-	private final List<String>  _missingCDS;
-	
+	private final List<String>	_missingCompany;
+	private final List<String>	_missingCDS;
 
 	/***********************************************************************
 	 * Constructor
@@ -69,12 +68,14 @@ public class CDSIndexProcessor implements I_DBProcessor {
 						last += fields.getLast();
 						available++;
 					} else {
-						missingData.add( ((CDSSingleNameReader) reader).getId());
+						missingData.add( ((CDSSingleNameReader) reader).getId() );
 					}
 				}
 			}
-			ask /= available;
-			last /= available;
+			if (available != 0) {
+				ask /= available;
+				last /= available;
+			}
 			_out.append( ParseDate.standardFromLong( sequenceNumber ) );
 			_out.append( ',' );
 			_out.append( String.valueOf( last ) );
@@ -100,14 +101,14 @@ public class CDSIndexProcessor implements I_DBProcessor {
 	@Override
 	public void stop() {
 		try {
-			if (_missingCompany.size() != 0) {
+			if (_missingCompany != null && _missingCompany.size() != 0) {
 				_out.append( "missingComany:" );
 				for (String s : _missingCompany) {
 					_out.append( s.replaceAll( ",", "" ) + ";" );
 				}
 				_out.append( '\n' );
 			}
-			if (_missingCDS.size() != 0) {
+			if (_missingCompany != null && _missingCDS.size() != 0) {
 				_out.append( "missingCDS:" );
 				for (String s : _missingCDS) {
 					_out.append( s.replaceAll( ",", "" ) + ";" );

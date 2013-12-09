@@ -68,18 +68,24 @@ public class CDSSingleNameReader implements I_DBReader, Comparable<CDSSingleName
 		final ArrayList<Float> ask = new ArrayList<>();
 		// Open file
 		BufferedReader in = null;
+		String str = null;
+		String[] line = null;
+		String[] day;
 		try {
 			in = new BufferedReader( new FileReader( filePathName ) );
-			String str;
-			String[] line;
-			String[] day;
+
 			in.readLine(); // ignore header
-			while ((str = in.readLine()) != null) {
+			while ((str = in.readLine()) != null && !str.equals( "" )) {
 				line = str.split( "," );
 				day = line[ 0 ].split( "-" );
 				if (day.length == 1) { // my time version
-					date.add( ParseDate.longFromStandard( line[ 0 ] ) );
-				} else { // dashen's time version
+					try {
+						date.add( ParseDate.longFromStandard( line[ 0 ] ) );
+					} catch (ArrayIndexOutOfBoundsException e) {
+						System.err.println(str);
+						System.err.println(line[0]);
+					}
+				} else { // zhichao's time version
 					date.add( Long.parseLong( day[ 0 ] ) * 10000 + Long.parseLong( day[ 1 ] ) * 100
 							+ Long.parseLong( day[ 2 ] ) );
 				}
@@ -89,7 +95,7 @@ public class CDSSingleNameReader implements I_DBReader, Comparable<CDSSingleName
 			}
 		} catch (final FileNotFoundException e) {
 			throw e;
-		} catch (final IOException e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
 		} finally {
 			try {
